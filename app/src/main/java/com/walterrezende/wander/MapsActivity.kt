@@ -1,7 +1,9 @@
 package com.walterrezende.wander
 
+import android.content.res.Resources
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 
@@ -10,12 +12,14 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.MapStyleOptions
 import com.google.android.gms.maps.model.MarkerOptions
 import java.util.*
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private lateinit var map: GoogleMap
+    private val TAG = MapsActivity::class.java.simpleName
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,24 +35,29 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         return true
     }
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
-        R.id.normal_map -> {
-            map.mapType = GoogleMap.MAP_TYPE_NORMAL
-            true
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        if(!::map.isInitialized)
+            return super.onOptionsItemSelected(item)
+
+        return when (item.itemId) {
+            R.id.normal_map -> {
+                map.mapType = GoogleMap.MAP_TYPE_NORMAL
+                true
+            }
+            R.id.hybrid_map -> {
+                map.mapType = GoogleMap.MAP_TYPE_HYBRID
+                true
+            }
+            R.id.satellite_map -> {
+                map.mapType = GoogleMap.MAP_TYPE_SATELLITE
+                true
+            }
+            R.id.terrain_map -> {
+                map.mapType = GoogleMap.MAP_TYPE_TERRAIN
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
         }
-        R.id.hybrid_map -> {
-            map.mapType = GoogleMap.MAP_TYPE_HYBRID
-            true
-        }
-        R.id.satellite_map -> {
-            map.mapType = GoogleMap.MAP_TYPE_SATELLITE
-            true
-        }
-        R.id.terrain_map -> {
-            map.mapType = GoogleMap.MAP_TYPE_TERRAIN
-            true
-        }
-        else -> super.onOptionsItemSelected(item)
     }
 
     /**
@@ -61,7 +70,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
      * installed Google Play services and returned to the app.
      */
     override fun onMapReady(googleMap: GoogleMap) {
-        googleMap.run {
+        map = googleMap.apply {
 
             val latitude = -23.54626445090568
             val longitude = -46.63790340398839
@@ -69,6 +78,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             val spLatlng = LatLng(latitude, longitude)
             val zoomLevel = 12f
 
+            setMapStyle()
             moveCameraToPosition(spLatlng, zoomLevel)
             addCurrentPositionMarker(spLatlng)
 
@@ -110,6 +120,22 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             )
 
             poiMarker.showInfoWindow()
+        }
+    }
+
+    private fun GoogleMap.setMapStyle() {
+        try {
+            val success = setMapStyle(
+                MapStyleOptions.loadRawResourceStyle(
+                    this@MapsActivity,
+                    R.raw.map_style
+                )
+            )
+
+            if(!success)
+                Log.e(TAG, getString(R.string.style_parsing_failed))
+        } catch (e: Resources.NotFoundException) {
+            Log.e(TAG, getString(R.string.style_not_found, e))
         }
     }
 

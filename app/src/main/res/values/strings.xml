@@ -10,4 +10,6 @@
     <string name="dropped_pin">Dropped Pin</string>
     <string name="current_location_pin">Current Location Pin</string>
     <string name="poi">poi</string>
+    <string name="style_parsing_failed">Style parsing Failed.</string>
+    <string name="style_not_found">"Could not find style error: %1$s"</string>
 </resources>
