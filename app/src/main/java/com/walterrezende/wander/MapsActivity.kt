@@ -11,6 +11,7 @@ import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
+import java.util.*
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
@@ -21,7 +22,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         setContentView(R.layout.activity_maps)
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         val mapFragment = supportFragmentManager
-                .findFragmentById(R.id.map) as SupportMapFragment
+            .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
     }
 
@@ -30,7 +31,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         return true
     }
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean = when(item.itemId) {
+    override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
         R.id.normal_map -> {
             map.mapType = GoogleMap.MAP_TYPE_NORMAL
             true
@@ -60,15 +61,62 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
      * installed Google Play services and returned to the app.
      */
     override fun onMapReady(googleMap: GoogleMap) {
-        map = googleMap
+        googleMap.run {
 
-        val latitude = -23.54626445090568
-        val longitude = -46.63790340398839
+            val latitude = -23.54626445090568
+            val longitude = -46.63790340398839
 
-        val spLatlng = LatLng(latitude, longitude)
-        val zoomLevel = 12f
+            val spLatlng = LatLng(latitude, longitude)
+            val zoomLevel = 12f
 
-        map.moveCamera(CameraUpdateFactory.newLatLngZoom(spLatlng, zoomLevel))
-        map.addMarker(MarkerOptions().position(spLatlng))
+            moveCameraToPosition(spLatlng, zoomLevel)
+            addCurrentPositionMarker(spLatlng)
+
+            setMapLongClickListener()
+            setMapPOIClickListener()
+        }
     }
+
+    private fun GoogleMap.moveCameraToPosition(spLatlng: LatLng, zoomLevel: Float) {
+        moveCamera(CameraUpdateFactory.newLatLngZoom(spLatlng, zoomLevel))
+    }
+
+    private fun GoogleMap.addCurrentPositionMarker(spLatlng: LatLng) {
+        addMarker(
+            MarkerOptions()
+                .position(spLatlng)
+                .title(getString(R.string.current_location_pin))
+                .snippet(createSnippet(spLatlng))
+        )
+    }
+
+    private fun GoogleMap.setMapLongClickListener() {
+        setOnMapLongClickListener { latLng ->
+            addMarker(
+                MarkerOptions()
+                    .position(latLng)
+                    .title(getString(R.string.dropped_pin))
+                    .snippet(createSnippet(latLng))
+            )
+        }
+    }
+
+    private fun GoogleMap.setMapPOIClickListener() {
+        setOnPoiClickListener { poi ->
+            val poiMarker = addMarker(
+                MarkerOptions()
+                    .position(poi.latLng)
+                    .title(poi.name)
+            )
+
+            poiMarker.showInfoWindow()
+        }
+    }
+
+    private fun createSnippet(latLng: LatLng) = String.format(
+        Locale.getDefault(),
+        "Lat: %1$.5f, Long: %2$.5f",
+        latLng.latitude,
+        latLng.longitude
+    )
 }

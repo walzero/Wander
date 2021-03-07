@@ -8,5 +8,6 @@
     <string name="terrain_map">Terrain Map</string>
     <string name="lat_long_snippet">Lat: %1$.5f, Long: %2$.5f</string>
     <string name="dropped_pin">Dropped Pin</string>
+    <string name="current_location_pin">Current Location Pin</string>
     <string name="poi">poi</string>
 </resources>
