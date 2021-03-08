@@ -1,19 +1,15 @@
 package com.walterrezende.wander
 
 import android.Manifest
-import android.app.Activity
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Resources
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
-
 import androidx.activity.result.contract.ActivityResultContracts.RequestPermission
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
@@ -40,6 +36,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         val mapFragment = supportFragmentManager
             .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
+
+        requestPermission.launch(Manifest.permission.ACCESS_FINE_LOCATION)
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -99,15 +97,19 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             setMapPOIClickListener()
         }
 
-        requestPermission.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+        map.enableMyLocation()
     }
 
-    private fun createEmojiOverlay(
-        spLatlng: LatLng,
-        overlaySize: Float
-    ) = GroundOverlayOptions()
-        .image(BitmapDescriptorFactory.fromResource(R.drawable.party_emoji))
-        .position(spLatlng, overlaySize)
+    private fun GoogleMap.enableMyLocation() {
+        val requiredPermissions = arrayOf(
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        )
+
+        if (requiredPermissions.checkIfHasAllPermission()) {
+            isMyLocationEnabled = true
+        }
+    }
 
     private fun GoogleMap.moveCameraToPosition(spLatlng: LatLng, zoomLevel: Float) {
         moveCamera(CameraUpdateFactory.newLatLngZoom(spLatlng, zoomLevel))
@@ -163,10 +165,29 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
+    private fun createEmojiOverlay(
+        spLatlng: LatLng,
+        overlaySize: Float
+    ) = GroundOverlayOptions()
+        .image(BitmapDescriptorFactory.fromResource(R.drawable.party_emoji))
+        .position(spLatlng, overlaySize)
+
     private fun createSnippet(latLng: LatLng) = String.format(
         Locale.getDefault(),
         "Lat: %1$.5f, Long: %2$.5f",
         latLng.latitude,
         latLng.longitude
     )
+
+    private fun Array<String>.checkIfHasAllPermission(): Boolean {
+        forEach { permission ->
+            if (getPermissionStatus(permission) != PackageManager.PERMISSION_GRANTED)
+                return false
+        }
+
+        return true
+    }
+
+    private fun getPermissionStatus(permission: String) =
+        ActivityCompat.checkSelfPermission(this@MapsActivity, permission)
 }
