@@ -1,25 +1,37 @@
 package com.walterrezende.wander
 
+import android.Manifest
+import android.app.Activity
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.res.Resources
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 
+import androidx.activity.result.contract.ActivityResultContracts.RequestPermission
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
-import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.MapStyleOptions
-import com.google.android.gms.maps.model.MarkerOptions
+import com.google.android.gms.maps.model.*
 import java.util.*
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private lateinit var map: GoogleMap
     private val TAG = MapsActivity::class.java.simpleName
+    private var requestPermission = registerForActivityResult(RequestPermission()) { isGranted ->
+        if (isGranted) {
+            Log.i("DEBUG", "permission granted")
+        } else {
+            Log.i("DEBUG", "permission denied")
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,7 +48,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        if(!::map.isInitialized)
+        if (!::map.isInitialized)
             return super.onOptionsItemSelected(item)
 
         return when (item.itemId) {
@@ -71,21 +83,31 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
      */
     override fun onMapReady(googleMap: GoogleMap) {
         map = googleMap.apply {
+            val overlaySize = 100f
 
             val latitude = -23.54626445090568
             val longitude = -46.63790340398839
 
             val spLatlng = LatLng(latitude, longitude)
-            val zoomLevel = 12f
+            val zoomLevel = 18f
 
             setMapStyle()
             moveCameraToPosition(spLatlng, zoomLevel)
             addCurrentPositionMarker(spLatlng)
-
+            addGroundOverlay(createEmojiOverlay(spLatlng, overlaySize))
             setMapLongClickListener()
             setMapPOIClickListener()
         }
+
+        requestPermission.launch(Manifest.permission.ACCESS_FINE_LOCATION)
     }
+
+    private fun createEmojiOverlay(
+        spLatlng: LatLng,
+        overlaySize: Float
+    ) = GroundOverlayOptions()
+        .image(BitmapDescriptorFactory.fromResource(R.drawable.party_emoji))
+        .position(spLatlng, overlaySize)
 
     private fun GoogleMap.moveCameraToPosition(spLatlng: LatLng, zoomLevel: Float) {
         moveCamera(CameraUpdateFactory.newLatLngZoom(spLatlng, zoomLevel))
@@ -97,6 +119,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                 .position(spLatlng)
                 .title(getString(R.string.current_location_pin))
                 .snippet(createSnippet(spLatlng))
+                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN))
         )
     }
 
@@ -107,6 +130,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                     .position(latLng)
                     .title(getString(R.string.dropped_pin))
                     .snippet(createSnippet(latLng))
+                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE))
             )
         }
     }
@@ -132,7 +156,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                 )
             )
 
-            if(!success)
+            if (!success)
                 Log.e(TAG, getString(R.string.style_parsing_failed))
         } catch (e: Resources.NotFoundException) {
             Log.e(TAG, getString(R.string.style_not_found, e))
